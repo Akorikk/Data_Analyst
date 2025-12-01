@@ -16,7 +16,20 @@ Jupyter Notebook (inside VS Code)
 Columns were named Summary, Unnamed: 1, Unnamed: 9 and more  not meaningful. The file actually contained multiple sections. Summary rows at the top (OrgId, ParticipantId, etc.). Blank rows. A row with "Browsing" label. Then the real header row with columns like. OrgId, ParticipantId, DeviceId, url, eventtimeutc, transition, title, visitId, referringVisitId, eventtime. Then the browsing logs below it. Conclusion: we needed to extract the real header and rebuild the dataframe.
 
 * Clean & Reshape the Data (Extract true header)
-We identified the row that contains the true header (where the last column is eventtime), extracted it as column names, and created a clean dataframe from the rows below. Why we did it Real-world CSVs are often messy They may contain metadata, summaries, and multiple header rows.If we don’t fix the header, all later analysis (groupby, filtering) becomes hard or wrong. So this step Removes non-data rows (summary/empty rows). Gives us correct column names Leaves us with only actual browsing events.
+We identified the row that contains the true header (where the last column is eventtime), extracted it as column names, and created a clean dataframe from the rows below
+
+header_index = df[df['Unnamed: 9'] == 'eventtime'].index[0]
+
+true_header = df.iloc[header_index].values
+
+df_clean = df.iloc[header_index + 1:].copy()
+df_clean.columns = true_header
+df_clean = df_clean.reset_index(drop=True)
+
+df_clean.head()
+df_clean.info()
+
+ Why we did it Real-world CSVs are often messy They may contain metadata, summaries, and multiple header rows.If we don’t fix the header, all later analysis (groupby, filtering) becomes hard or wrong. So this step Removes non-data rows (summary/empty rows). Gives us correct column names Leaves us with only actual browsing events.
 
 * Parse Timestamps & Create Time Features
 df_clean['eventtime'] = pd.to_datetime(df_clean['eventtime'], errors='coerce')
@@ -202,29 +215,37 @@ plt.show()
 transition_counts
 
 Why we used this code/tool
-The transition column tells us how the user reached each page:link – clicking a hyperlink
-
-reload – refreshing the page
-
-generated – browser-generated pages
-
-form_submit – form submissions (search, login)
-
-typed – manually typed URL
-
-A bar chart shows which navigation types are most common → reveals browsing style.
+The transition column tells us how the user reached each page:link – clicking a hyperlink reload – refreshing the page generated – browser-generated pages form_submit – form submissions (search, login) typed – manually typed URL, A bar chart shows which navigation types are most common → reveals browsing style.
 
 What we understood
-
-link dominates (~4098 events) → mostly exploratory click-based browsing.
-
-Non-trivial reload and generated → repeated checking of content (dashboards, feeds, results).
-
-form_submit and typed show intentional actions (searching, going to specific sites).
+link dominates (~4098 events) → mostly exploratory click-based browsing. Non-trivial reload and generated → repeated checking of content (dashboards, feeds, results). form_submit and typed show intentional actions (searching, going to specific sites).
 
 This shows a mix of exploration and task-driven navigation.
 
-          
 
+* Summary for README
+Putting all steps together, we understand that: The user’s browsing is heavily focused on Search & Research (Google and related services).
+
+They show clear job & freelancing intent, with frequent visits to Upwork, Wellfound, TaskRabbit.
+
+They regularly use work tools & technical platforms like SharePoint, GitLab, AWS Console, Xero.
+
+Browsing peaks in the evenings, mainly on weekdays, especially mid-week.
+
+There is some E-commerce and Travel activity, and low but present social media use.
+
+Navigation is mostly via link clicks, with some deliberate searches (form_submit) and typed URLs.
+
+This end-to-end flow from raw messy CSV to clean insights demonstrates:
+
+Data cleaning with pandas
+
+Feature engineering
+
+Behavioral categorization
+
+Visualization skills
+
+Clear, business-oriented interpretation
 
  
